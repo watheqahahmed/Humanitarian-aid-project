@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AidRequest;
+use App\Models\Notification; // إضافة Notification
 use Illuminate\Http\Request;
 
 class AidRequestController extends Controller
@@ -39,7 +40,19 @@ class AidRequestController extends Controller
             'status' => 'required|in:pending,approved,denied',
         ]);
 
+        $oldStatus = $aidRequest->status; // حفظ الحالة القديمة
         $aidRequest->update($validatedData);
+
+        // إذا تغيرت الحالة، أنشئ إشعار للمستفيد
+        if ($oldStatus !== $aidRequest->status) {
+            $message = "تم تحديث حالة طلب المساعدة رقم " . $aidRequest->id . " إلى: " . $aidRequest->status;
+            Notification::create([
+                'user_id' => $aidRequest->beneficiary_id,
+                'message' => $message,
+                'type' => 'status_update',
+                'status' => 'unread',
+            ]);
+        }
 
         return response()->json($aidRequest);
     }

@@ -32,8 +32,9 @@ class DeliveryController extends Controller
             'proof_file' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
         ]);
 
-        // Handle file upload
+        // تحقق مما إذا كان هناك ملف مرفوع
         if ($request->hasFile('proof_file')) {
+            // قم بتخزين الملف في مجلد public/proofs
             $path = $request->file('proof_file')->store('proofs', 'public');
             $validatedData['proof_file'] = $path;
         }
