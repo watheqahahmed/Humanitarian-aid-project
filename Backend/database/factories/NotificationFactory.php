@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -16,8 +17,14 @@ class NotificationFactory extends Factory
      */
     public function definition(): array
     {
+        $types = ['new_request', 'status_update', 'new_message', 'reminder'];
+        $statuses = ['read', 'unread'];
+
         return [
-            //
+            'user_id' => User::inRandomOrder()->first()->id,
+            'message' => fake()->sentence(),
+            'type' => $types[array_rand($types)],
+            'status' => $statuses[array_rand($statuses)],
         ];
     }
 }
