@@ -1,117 +1,101 @@
 <template>
-  <div class="space-y-6">
-    <div class="flex justify-between items-center">
-      <h2 class="text-2xl font-bold">My Aid Requests</h2>
-      <button @click="openForm" class="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-500">New Request</button>
+  <div class="min-h-screen p-8 bg-gray-100">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">طلبات المساعدة الخاصة بي</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+      <h2 class="text-2xl font-semibold mb-4 text-gray-700">تقديم طلب مساعدة جديد</h2>
+      <form @submit.prevent="submitAidRequest">
+        <div class="mb-4">
+          <label for="type" class="block text-gray-700 text-sm font-bold mb-2">نوع المساعدة</label>
+          <select v-model="newRequest.type" id="type" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+            <option value="food">مواد غذائية</option>
+            <option value="clothes">ملابس</option>
+            <option value="medicine">دواء</option>
+          </select>
+        </div>
+        <div class="mb-6">
+          <label for="description" class="block text-gray-700 text-sm font-bold mb-2">الوصف</label>
+          <textarea v-model="newRequest.description" id="description" rows="4" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required></textarea>
+        </div>
+        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+          إرسال الطلب
+        </button>
+      </form>
     </div>
 
-    <!-- New Request Form -->
-    <div v-if="showForm" class="bg-white dark:bg-gray-800 p-6 rounded shadow space-y-4">
-      <input type="text" v-model="form.type" placeholder="Aid Type" class="input-field" />
-      <textarea v-model="form.description" placeholder="Description" class="input-field"></textarea>
-      <input type="file" @change="handleFile" class="input-field" />
-      <div class="flex gap-2">
-        <button @click="submitRequest" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-500">Submit</button>
-        <button @click="showForm = false" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
-      </div>
-    </div>
-
-    <!-- Aid Requests Table -->
-    <table class="min-w-full bg-white dark:bg-gray-800 rounded shadow overflow-hidden">
-      <thead>
-        <tr class="bg-gray-200 dark:bg-gray-700 text-left">
-          <th class="px-4 py-2">Type</th>
-          <th class="px-4 py-2">Description</th>
-          <th class="px-4 py-2">Status</th>
-          <th class="px-4 py-2">Document</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="req in requests" :key="req.id" class="border-b border-gray-300 dark:border-gray-600">
-          <td class="px-4 py-2">{{ req.type }}</td>
-          <td class="px-4 py-2">{{ req.description }}</td>
-          <td class="px-4 py-2 capitalize">{{ req.status }}</td>
-          <td class="px-4 py-2">
-            <a v-if="req.document_url" :href="`http://127.0.0.1:8000/storage/${req.document_url}`" target="_blank" class="text-teal-600 hover:underline">View</a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
-    <!-- Charts -->
-    <div class="mt-6">
-      <h3 class="text-xl font-semibold mb-4">My Requests Status</h3>
-      <PieChart :chart-data="requestsData" :chart-options="chartOptions" />
+    <div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+      <h2 class="text-2xl font-semibold mb-4 text-gray-700">طلباتي السابقة</h2>
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">النوع</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">الوصف</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr v-for="request in requests" :key="request.id">
+            <td class="px-6 py-4 whitespace-nowrap">{{ request.type }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">{{ request.description }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span :class="getStatusClass(request.status)">
+                {{ request.status }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
-import api from "@/axios";
-import { useToast } from "vue-toastification";
-import { Pie } from "vue-chartjs";
-import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement } from "chart.js";
-
-ChartJS.register(Title, Tooltip, Legend, ArcElement);
-
-const toast = useToast();
+import { ref, onMounted } from 'vue';
+import apiClient from '../../axios';
+import { useAuthStore } from '../../stores/auth';
 
 const requests = ref([]);
-const showForm = ref(false);
-const file = ref(null);
-const form = reactive({ type: "", description: "" });
-const requestsData = ref({ labels: ["Pending", "Approved", "Denied"], datasets: [{ data: [0,0,0], backgroundColor: ["#FBBF24", "#34D399", "#F87171"] }] });
-const chartOptions = { responsive: true, plugins: { legend: { position: "top" } } };
+const newRequest = ref({ type: 'food', description: '' });
+const authStore = useAuthStore();
 
-const fetchRequests = async () => {
-  const res = await api.get("/aid-requests");
-  requests.value = res.data;
-
-  // تحديث بيانات الـChart
-  const statusCount = { pending: 0, approved: 0, denied: 0 };
-  res.data.forEach(r => statusCount[r.status]++);
-  requestsData.value.datasets[0].data = [statusCount.pending, statusCount.approved, statusCount.denied];
+const fetchAidRequests = async () => {
+  try {
+    const response = await apiClient.get('/beneficiary/aid-requests', {
+      headers: { Authorization: `Bearer ${authStore.token}` }
+    });
+    requests.value = response.data;
+  } catch (error) {
+    console.error('فشل في جلب طلبات المساعدة:', error);
+  }
 };
 
-const openForm = () => {
-  form.type = "";
-  form.description = "";
-  file.value = null;
-  showForm.value = true;
+const submitAidRequest = async () => {
+  try {
+    await apiClient.post('/beneficiary/aid-requests', newRequest.value, {
+      headers: { Authorization: `Bearer ${authStore.token}` }
+    });
+    alert('تم إرسال طلبك بنجاح.');
+    newRequest.value = { type: 'food', description: '' };
+    await fetchAidRequests();
+  } catch (error) {
+    console.error('فشل في تقديم الطلب:', error);
+    alert('فشل في تقديم الطلب.');
+  }
 };
 
-const handleFile = (e) => {
-  file.value = e.target.files[0];
+const getStatusClass = (status) => {
+  return {
+    'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+    'bg-yellow-100 text-yellow-800': status === 'pending',
+    'bg-green-100 text-green-800': status === 'approved',
+    'bg-red-100 text-red-800': status === 'denied',
+  };
 };
 
-const submitRequest = async () => {
-  const formData = new FormData();
-  formData.append("type", form.type);
-  formData.append("description", form.description);
-  if (file.value) formData.append("document", file.value);
-
-  await api.post("/aid-requests", formData);
-  toast.success("Aid request submitted successfully");
-  showForm.value = false;
-  fetchRequests();
-};
-
-onMounted(fetchRequests);
+onMounted(() => {
+  fetchAidRequests();
+});
 </script>
 
 <style scoped>
-.input-field {
-  width: 100%;
-  padding: 0.5rem;
-  border-radius: 0.375rem;
-  border: 1px solid #d1d5db;
-  background-color: white;
-  color: #111827;
-}
-.dark .input-field {
-  background-color: #1f2937;
-  border-color: #374151;
-  color: #f9fafb;
-}
 </style>

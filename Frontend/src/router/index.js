@@ -1,45 +1,75 @@
-import { createRouter, createWebHistory } from "vue-router";
-import Dashboard from "@/views/Dashboard.vue";
-import Users from "@/views/admin/Users.vue";
-import Donations from "@/views/admin/Donations.vue";
-import Distributions from "@/views/admin/Distributions.vue";
-import AidRequestsAdmin from "@/views/admin/AidRequests.vue";
-import AssignedDeliveries from "@/views/volunteer/AssignedDeliveries.vue";
-import AidRequestsBeneficiary from "@/views/beneficiary/AidRequests.vue";
-import Login from "@/views/auth/Login.vue";
-import Register from "@/views/auth/Register.vue";
-
-// Simulated Auth (replace with Vuex/Pinia store or API)
-let currentUser = { role: null, name: null };
-
-export const setUser = (user) => {
-  currentUser = user;
-};
+import { createRouter, createWebHistory } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 
 const routes = [
-  { path: "/login", component: Login, meta: { guest: true } },
-  { path: "/register", component: Register, meta: { guest: true } },
+  // مسار الصفحة الرئيسية العامة
   {
-    path: "/dashboard",
-    component: Dashboard,
-    meta: { requiresAuth: true },
-    children: [
-      { path: "", component: Dashboard, meta: { title: "Dashboard" } },
-
-      // Admin Routes
-      { path: "users", component: Users, meta: { requiresAuth: true, roles: ["admin"], title: "Users" } },
-      { path: "donations", component: Donations, meta: { requiresAuth: true, roles: ["admin"], title: "Donations" } },
-      { path: "distributions", component: Distributions, meta: { requiresAuth: true, roles: ["admin"], title: "Distributions" } },
-      { path: "aid-requests", component: AidRequestsAdmin, meta: { requiresAuth: true, roles: ["admin"], title: "Aid Requests" } },
-
-      // Volunteer Routes
-      { path: "assigned-deliveries", component: AssignedDeliveries, meta: { requiresAuth: true, roles: ["volunteer"], title: "Assigned Deliveries" } },
-
-      // Beneficiary Routes
-      { path: "beneficiary-aid-requests", component: AidRequestsBeneficiary, meta: { requiresAuth: true, roles: ["beneficiary"], title: "Aid Requests" } },
-    ],
+    path: '/',
+    name: 'home',
+    component: () => import('../views/public/LandingPage.vue'),
+    meta: { requiresAuth: false }
   },
-  { path: "/:pathMatch(.*)*", redirect: "/login" },
+  // مسار تسجيل الدخول
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/auth/Login.vue'),
+    meta: { requiresAuth: false }
+  },
+
+  // مسارات المسؤول (Admin)
+  {
+    path: '/admin/dashboard',
+    name: 'admin.dashboard',
+    component: () => import('../views/admin/AdminDashboard.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+  {
+    path: '/admin/donations',
+    name: 'admin.donations',
+    component: () => import('../views/admin/Donations.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+  {
+    path: '/admin/aid-requests',
+    name: 'admin.aid-requests',
+    component: () => import('../views/admin/AidRequests.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+  {
+    path: '/admin/distributions',
+    name: 'admin.distributions',
+    component: () => import('../views/admin/Distributions.vue'),
+    meta: { requiresAuth: true, role: 'admin' }
+  },
+
+  // مسارات المتطوع (Volunteer)
+  {
+    path: '/volunteer/dashboard',
+    name: 'volunteer.dashboard',
+    component: () => import('../views/volunteer/VolunteerDashboard.vue'),
+    meta: { requiresAuth: true, role: 'volunteer' }
+  },
+  {
+    path: '/volunteer/assigned-deliveries',
+    name: 'volunteer.assigned-deliveries',
+    component: () => import('../views/volunteer/AssignedDeliveries.vue'),
+    meta: { requiresAuth: true, role: 'volunteer' }
+  },
+
+  // مسارات المستفيد (Beneficiary)
+  {
+    path: '/beneficiary/dashboard',
+    name: 'beneficiary.dashboard',
+    component: () => import('../views/beneficiary/BeneficiaryDashboard.vue'),
+    meta: { requiresAuth: true, role: 'beneficiary' }
+  },
+  {
+    path: '/beneficiary/aid-requests',
+    name: 'beneficiary.aid-requests',
+    component: () => import('../views/beneficiary/AidRequests.vue'),
+    meta: { requiresAuth: true, role: 'beneficiary' }
+  },
 ];
 
 const router = createRouter({
@@ -47,20 +77,21 @@ const router = createRouter({
   routes,
 });
 
-// Route Guards
 router.beforeEach((to, from, next) => {
-  if (to.meta.guest) {
-    return next();
-  }
+  const authStore = useAuthStore();
+  const isAuthenticated = authStore.isAuthenticated;
+  const requiredAuth = to.meta.requiresAuth;
+  const requiredRole = to.meta.role;
 
-  if (to.meta.requiresAuth) {
-    if (!currentUser.role) return next("/login");
-    if (to.meta.roles && !to.meta.roles.includes(currentUser.role)) {
-      return next("/dashboard"); // redirect if role not authorized
-    }
+  if (requiredAuth && !isAuthenticated) {
+    next({ name: 'login' });
+  } else if (isAuthenticated && to.name === 'login') {
+    next({ name: authStore.user.role + '.dashboard' });
+  } else if (isAuthenticated && requiredRole && authStore.user.role !== requiredRole) {
+    next({ name: 'home' });
+  } else {
+    next();
   }
-
-  next();
 });
 
 export default router;
