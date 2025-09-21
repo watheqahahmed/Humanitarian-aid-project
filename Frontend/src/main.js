@@ -1,11 +1,23 @@
 import { createApp } from 'vue';
-import { createPinia } from 'pinia'; // استيراد Pinia
+import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
 
-const app = createApp(App);
-const pinia = createPinia(); // إنشاء مثيل Pinia
+// استدعاء Echo
+import echo from './echo';
 
-app.use(pinia); // استخدام Pinia
+const app = createApp(App);
+
+// تثبيت Pinia و Router
+app.use(createPinia());
 app.use(router);
+
+// ربط Echo كـ global property لتستدعيه في أي كومبوننت
+app.config.globalProperties.$echo = echo;
+
+// تهيئة الـ Theme Store
+import { useThemeStore } from './stores/theme';
+const themeStore = useThemeStore();
+themeStore.init();
+
 app.mount('#app');

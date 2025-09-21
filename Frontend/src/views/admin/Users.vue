@@ -1,84 +1,169 @@
 <template>
-  <div class="space-y-6">
-    <h2 class="text-2xl font-bold">Manage Users</h2>
-    <button @click="openForm" class="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-500">New User</button>
-
-    <!-- New User Form -->
-    <div v-if="showForm" class="bg-white dark:bg-gray-800 p-6 rounded shadow space-y-4">
-      <input type="text" v-model="form.name" placeholder="Name" class="input-field" />
-      <input type="email" v-model="form.email" placeholder="Email" class="input-field" />
-      <input type="password" v-model="form.password" placeholder="Password" class="input-field" />
-      <select v-model="form.role" class="input-field">
-        <option value="">Select Role</option>
-        <option value="admin">Admin</option>
-        <option value="volunteer">Volunteer</option>
-        <option value="beneficiary">Beneficiary</option>
-      </select>
-      <div class="flex gap-2">
-        <button @click="submitUser" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-500">Submit</button>
-        <button @click="showForm=false" class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Cancel</button>
+  <div class="min-h-screen p-8 bg-gray-100">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">إدارة المستخدمين</h1>
+    <div class="mb-4">
+      <input
+        v-model="searchTerm"
+        type="text"
+        placeholder="بحث بالاسم أو البريد الإلكتروني..."
+        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+      >
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">الاسم</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">البريد الإلكتروني</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">الدور</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr v-for="user in filteredUsers" :key="user.id">
+            <td class="px-6 py-4 whitespace-nowrap">{{ user.name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">{{ user.email }}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span :class="getRoleClass(user.role)">
+                {{ user.role }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <button @click="openModal(user)" class="text-blue-600 hover:text-blue-900 ml-2">تعديل الدور</button>
+              <button @click="deleteUser(user.id)" class="text-red-600 hover:text-red-900">حذف</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div v-if="filteredUsers.length === 0" class="text-center p-4 text-gray-500">
+        لا توجد نتائج مطابقة.
       </div>
     </div>
-
-    <!-- Users Table -->
-    <table class="min-w-full bg-white dark:bg-gray-800 rounded shadow overflow-hidden">
-      <thead>
-        <tr class="bg-gray-200 dark:bg-gray-700">
-          <th class="px-4 py-2">Name</th>
-          <th class="px-4 py-2">Email</th>
-          <th class="px-4 py-2">Role</th>
-          <th class="px-4 py-2">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="user in users" :key="user.id" class="border-b border-gray-300 dark:border-gray-600">
-          <td class="px-4 py-2">{{ user.name }}</td>
-          <td class="px-4 py-2">{{ user.email }}</td>
-          <td class="px-4 py-2 capitalize">{{ user.role }}</td>
-          <td class="px-4 py-2">
-            <button @click="deleteUser(user.id)" class="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-500">Delete</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
   </div>
+
+  <Modal :show="showModal" @close="closeModal">
+    <template #header>
+      تعديل دور المستخدم
+    </template>
+    <template #body>
+      <form @submit.prevent="updateUserRole">
+        <div class="mb-4">
+          <label for="role" class="block text-gray-700 text-sm font-bold mb-2">الدور</label>
+          <select v-model="selectedUser.role" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            <option value="admin">مسؤول</option>
+            <option value="volunteer">متطوع</option>
+            <option value="beneficiary">مستفيد</option>
+          </select>
+        </div>
+        <div class="flex justify-end">
+          <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+            حفظ التغييرات
+          </button>
+        </div>
+      </form>
+    </template>
+  </Modal>
+
+  <Notification :message="notification.message" :type="notification.type" />
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
-import api from "@/axios";
-import { useToast } from "vue-toastification";
+import { ref, onMounted, computed } from 'vue';
+import apiClient from '../../axios';
+import { useAuthStore } from '../../stores/auth';
+import Modal from '../../components/common/Modal.vue';
+import Notification from '../../components/common/Notifications.vue';
 
-const toast = useToast();
 const users = ref([]);
-const showForm = ref(false);
-const form = reactive({ name: "", email: "", password: "", role: "" });
+const authStore = useAuthStore();
+const showModal = ref(false);
+const selectedUser = ref(null);
+const searchTerm = ref('');
+const notification = ref({
+  message: '',
+  type: 'success',
+});
 
 const fetchUsers = async () => {
-  const res = await api.get("/users");
-  users.value = res.data;
+  try {
+    const response = await apiClient.get('/admin/users', {
+      headers: { Authorization: `Bearer ${authStore.token}` }
+    });
+    users.value = response.data;
+  } catch (error) {
+    console.error('فشل في جلب بيانات المستخدمين:', error);
+    showNotification('فشل في جلب بيانات المستخدمين.', 'error');
+  }
 };
 
-const openForm = () => {
-  form.name = "";
-  form.email = "";
-  form.password = "";
-  form.role = "";
-  showForm.value = true;
+const showNotification = (message, type) => {
+  notification.value.message = '';
+  notification.value.type = type;
+  setTimeout(() => {
+    notification.value.message = message;
+  }, 100);
 };
 
-const submitUser = async () => {
-  await api.post("/users", form);
-  toast.success("User created successfully");
-  showForm.value = false;
+const openModal = (user) => {
+  selectedUser.value = { ...user };
+  showModal.value = true;
+};
+
+const closeModal = () => {
+  showModal.value = false;
+  selectedUser.value = null;
+};
+
+const updateUserRole = async () => {
+  try {
+    await apiClient.put(`/admin/users/${selectedUser.value.id}`, { role: selectedUser.value.role }, {
+      headers: { Authorization: `Bearer ${authStore.token}` }
+    });
+    showNotification('تم تعديل دور المستخدم بنجاح.', 'success');
+    closeModal();
+    await fetchUsers();
+  } catch (error) {
+    console.error('فشل في تحديث دور المستخدم:', error);
+    showNotification('فشل في تحديث دور المستخدم.', 'error');
+  }
+};
+
+const deleteUser = async (userId) => {
+  if (confirm('هل أنت متأكد من حذف هذا المستخدم؟')) {
+    try {
+      await apiClient.delete(`/admin/users/${userId}`, {
+        headers: { Authorization: `Bearer ${authStore.token}` }
+      });
+      showNotification('تم حذف المستخدم بنجاح.', 'success');
+      await fetchUsers();
+    } catch (error) {
+      console.error('فشل في حذف المستخدم:', error);
+      showNotification('فشل في حذف المستخدم.', 'error');
+    }
+  }
+};
+
+const getRoleClass = (role) => {
+  return {
+    'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+    'bg-blue-100 text-blue-800': role === 'admin',
+    'bg-green-100 text-green-800': role === 'volunteer',
+    'bg-yellow-100 text-yellow-800': role === 'beneficiary',
+  };
+};
+
+const filteredUsers = computed(() => {
+  if (!searchTerm.value) {
+    return users.value;
+  }
+  const lowerCaseSearchTerm = searchTerm.value.toLowerCase();
+  return users.value.filter(user =>
+    user.name.toLowerCase().includes(lowerCaseSearchTerm) ||
+    user.email.toLowerCase().includes(lowerCaseSearchTerm)
+  );
+});
+
+onMounted(() => {
   fetchUsers();
-};
-
-const deleteUser = async (id) => {
-  await api.delete(`/users/${id}`);
-  toast.success("User deleted");
-  fetchUsers();
-};
-
-onMounted(fetchUsers);
+});
 </script>

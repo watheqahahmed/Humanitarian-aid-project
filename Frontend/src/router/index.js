@@ -1,75 +1,71 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import DashboardLayout from '../components/common/DashboardLayout.vue';
+
+// الصفحات العامة
+const LandingPage = () => import('../views/public/LandingPage.vue');
+const LoginPage = () => import('../views/auth/Login.vue');
+
+// لوحة المسؤول
+const AdminDashboard = () => import('../views/admin/AdminDashboard.vue');
+const Donations = () => import('../views/admin/Donations.vue');
+const AidRequests = () => import('../views/admin/AidRequests.vue');
+const Distributions = () => import('../views/admin/Distributions.vue');
+const Users = () => import('../views/admin/Users.vue');
+
+// لوحة المتطوع
+const VolunteerDashboard = () => import('../views/volunteer/VolunteerDashboard.vue');
+const AssignedDeliveries = () => import('../views/volunteer/AssignedDeliveries.vue');
+
+// لوحة المستفيد
+const BeneficiaryDashboard = () => import('../views/beneficiary/BeneficiaryDashboard.vue');
+const BeneficiaryAidRequests = () => import('../views/beneficiary/AidRequests.vue');
+
+// صفحة 404
+const NotFound = () => import('../views/public/NotFound.vue');
 
 const routes = [
-  // مسار الصفحة الرئيسية العامة
+  { path: '/', name: 'home', component: LandingPage, meta: { requiresAuth: false } },
+  { path: '/login', name: 'login', component: LoginPage, meta: { requiresAuth: false } },
+
+  // لوحة المسؤول
   {
-    path: '/',
-    name: 'home',
-    component: () => import('../views/public/LandingPage.vue'),
-    meta: { requiresAuth: false }
-  },
-  // مسار تسجيل الدخول
-  {
-    path: '/login',
-    name: 'login',
-    component: () => import('../views/auth/Login.vue'),
-    meta: { requiresAuth: false }
+    path: '/admin',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, role: 'admin' },
+    children: [
+      { path: 'dashboard', name: 'admin.dashboard', component: AdminDashboard },
+      { path: 'donations', name: 'admin.donations', component: Donations },
+      { path: 'aid-requests', name: 'admin.aid-requests', component: AidRequests },
+      { path: 'distributions', name: 'admin.distributions', component: Distributions },
+      { path: 'users', name: 'admin.users', component: Users }
+    ]
   },
 
-  // مسارات المسؤول (Admin)
+  // لوحة المتطوع
   {
-    path: '/admin/dashboard',
-    name: 'admin.dashboard',
-    component: () => import('../views/admin/AdminDashboard.vue'),
-    meta: { requiresAuth: true, role: 'admin' }
-  },
-  {
-    path: '/admin/donations',
-    name: 'admin.donations',
-    component: () => import('../views/admin/Donations.vue'),
-    meta: { requiresAuth: true, role: 'admin' }
-  },
-  {
-    path: '/admin/aid-requests',
-    name: 'admin.aid-requests',
-    component: () => import('../views/admin/AidRequests.vue'),
-    meta: { requiresAuth: true, role: 'admin' }
-  },
-  {
-    path: '/admin/distributions',
-    name: 'admin.distributions',
-    component: () => import('../views/admin/Distributions.vue'),
-    meta: { requiresAuth: true, role: 'admin' }
+    path: '/volunteer',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, role: 'volunteer' },
+    children: [
+      { path: 'dashboard', name: 'volunteer.dashboard', component: VolunteerDashboard },
+      { path: 'assigned-deliveries', name: 'volunteer.assigned-deliveries', component: AssignedDeliveries }
+    ]
   },
 
-  // مسارات المتطوع (Volunteer)
+  // لوحة المستفيد
   {
-    path: '/volunteer/dashboard',
-    name: 'volunteer.dashboard',
-    component: () => import('../views/volunteer/VolunteerDashboard.vue'),
-    meta: { requiresAuth: true, role: 'volunteer' }
-  },
-  {
-    path: '/volunteer/assigned-deliveries',
-    name: 'volunteer.assigned-deliveries',
-    component: () => import('../views/volunteer/AssignedDeliveries.vue'),
-    meta: { requiresAuth: true, role: 'volunteer' }
+    path: '/beneficiary',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, role: 'beneficiary' },
+    children: [
+      { path: 'dashboard', name: 'beneficiary.dashboard', component: BeneficiaryDashboard },
+      { path: 'aid-requests', name: 'beneficiary.aid-requests', component: BeneficiaryAidRequests }
+    ]
   },
 
-  // مسارات المستفيد (Beneficiary)
-  {
-    path: '/beneficiary/dashboard',
-    name: 'beneficiary.dashboard',
-    component: () => import('../views/beneficiary/BeneficiaryDashboard.vue'),
-    meta: { requiresAuth: true, role: 'beneficiary' }
-  },
-  {
-    path: '/beneficiary/aid-requests',
-    name: 'beneficiary.aid-requests',
-    component: () => import('../views/beneficiary/AidRequests.vue'),
-    meta: { requiresAuth: true, role: 'beneficiary' }
-  },
+  // صفحة 404 لأي رابط غير موجود
+  { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound }
 ];
 
 const router = createRouter({
@@ -86,8 +82,9 @@ router.beforeEach((to, from, next) => {
   if (requiredAuth && !isAuthenticated) {
     next({ name: 'login' });
   } else if (isAuthenticated && to.name === 'login') {
-    next({ name: authStore.user.role + '.dashboard' });
-  } else if (isAuthenticated && requiredRole && authStore.user.role !== requiredRole) {
+    // إعادة التوجيه للوحة المستخدم حسب الدور مع حماية من عدم وجود الدور
+    next({ name: authStore.user?.role ? authStore.user.role + '.dashboard' : 'home' });
+  } else if (isAuthenticated && requiredRole && authStore.user?.role !== requiredRole) {
     next({ name: 'home' });
   } else {
     next();
