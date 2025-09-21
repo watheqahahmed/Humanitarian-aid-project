@@ -2,41 +2,82 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Notification;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\NewNotificationMail;
 
 class NotificationController extends Controller
 {
-    // جلب إشعارات المستخدم
+    /**
+     * عرض الإشعارات للمستخدم الحالي
+     */
     public function index()
     {
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json(['message' => 'Unauthorized'], 401);
-        }
-
-        try {
-            // استخدم العلاقة الجديدة
-            $notifications = $user->notifications()->latest()->get();
-            return response()->json($notifications);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
+        $notifications = auth()->user()->notifications()->latest()->get();
+        return response()->json($notifications);
     }
 
-    // وضع علامة "مقروء"
-    public function markAsRead($id)
+    /**
+     * تعليم إشعار معين كمقروء
+     */
+    public function markAsRead(Notification $notification)
     {
-        $notification = Notification::findOrFail($id);
-
-        if ($notification->user_id !== Auth::id()) {
+        if ($notification->user_id !== auth()->id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $notification->status = 'read';
-        $notification->save();
+        $notification->update(['status' => 'read']);
 
         return response()->json($notification);
+    }
+
+    /**
+     * إنشاء إشعار وإرساله لجميع المستخدمين أو حسب الدور
+     */
+    public function createNotification($message, $roles = null, $type = 'success')
+    {
+        // جلب المستخدمين حسب الدور، أو جميعهم إذا لم يحدد دور
+        $users = $roles ? User::whereIn('role', (array)$roles)->get() : User::all();
+
+        foreach ($users as $user) {
+            // إنشاء الإشعار في قاعدة البيانات
+            $notification = Notification::create([
+                'user_id' => $user->id,
+                'message' => $message,
+                'type' => $type,
+                'status' => 'unread',
+            ]);
+
+            // إرسال البريد لكل مستخدم مع حماية من الأخطاء
+            try {
+                Mail::to($user->email)->send(new NewNotificationMail($notification->message));
+            } catch (\Exception $e) {
+                \Log::error('Mail error for user '.$user->email.': '.$e->getMessage());
+            }
+        }
+
+        return response()->json(['message' => 'Notification sent successfully.']);
+    }
+
+    /**
+     * إشعار مسؤول عند قيام متطوع برفع إثبات
+     */
+    public function notifyAdminAboutVolunteerProof($volunteer)
+    {
+        $message = "قام المتطوع {$volunteer->name} برفع إثبات جديد.";
+        // فقط للإدمن
+        return $this->createNotification($message, ['admin'], 'info');
+    }
+
+    /**
+     * إشعار المتطوعين عند وجود طلب جديد من مستفيد
+     */
+    public function notifyVolunteersAboutRequest($beneficiary)
+    {
+        $message = "المستفيد {$beneficiary->name} قدم طلب مساعدة جديد.";
+        // فقط للمتطوعين
+        return $this->createNotification($message, ['volunteer'], 'info');
     }
 }

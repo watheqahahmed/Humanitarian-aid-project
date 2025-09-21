@@ -6,25 +6,27 @@ use App\Http\Controllers\Controller;
 use App\Exports\AidRequestsExport;
 use App\Exports\DonationsExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ReportController extends Controller
 {
     /**
-     * Export all donations as Excel file.
+     * Export all donations as an Excel file.
      *
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     * @return BinaryFileResponse
      */
-    public function exportDonations()
+    public function exportDonations(): BinaryFileResponse
     {
         return Excel::download(new DonationsExport, 'donations.xlsx');
     }
 
     /**
-     * Export all aid requests as Excel file.
+     * Export all aid requests as an Excel file.
      *
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     * @return BinaryFileResponse
      */
-    public function exportAidRequests()
+    public function exportAidRequests(): BinaryFileResponse
     {
         return Excel::download(new AidRequestsExport, 'aid_requests.xlsx');
     }
@@ -33,18 +35,19 @@ class ReportController extends Controller
      * Export reports dynamically by type (donations / aid-requests).
      *
      * @param string $type
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\JsonResponse
+     * @return BinaryFileResponse|JsonResponse
      */
-    public function export($type)
+    public function export(string $type)
     {
-        if ($type === 'donations') {
-            return Excel::download(new DonationsExport, 'donations.xlsx');
-        }
+        switch ($type) {
+            case 'donations':
+                return Excel::download(new DonationsExport, 'donations.xlsx');
 
-        if ($type === 'aid-requests') {
-            return Excel::download(new AidRequestsExport, 'aid_requests.xlsx');
-        }
+            case 'aid-requests':
+                return Excel::download(new AidRequestsExport, 'aid_requests.xlsx');
 
-        return response()->json(['message' => 'Invalid report type.'], 400);
+            default:
+                return response()->json(['message' => 'Invalid report type.'], 400);
+        }
     }
 }

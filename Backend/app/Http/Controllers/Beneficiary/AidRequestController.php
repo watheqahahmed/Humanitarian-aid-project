@@ -4,23 +4,23 @@ namespace App\Http\Controllers\Beneficiary;
 
 use App\Http\Controllers\Controller;
 use App\Models\AidRequest;
+use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AidRequestController extends Controller
 {
     /**
-     * Display a listing of aid requests for admin or authenticated beneficiary.
+     * عرض جميع طلبات المساعدة للـ Admin أو للمستفيد المصادق عليه
      */
     public function index()
     {
         $user = Auth::user();
 
         if ($user->role === 'admin') {
-            // Admin يرى جميع طلبات المساعدة
             $requests = AidRequest::all();
         } elseif ($user->role === 'beneficiary') {
-            // المستفيد يرى فقط طلباته الخاصة
             $requests = $user->aidRequests;
         } else {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -30,7 +30,7 @@ class AidRequestController extends Controller
     }
 
     /**
-     * Store a newly created aid request.
+     * إنشاء طلب مساعدة جديد
      */
     public function store(Request $request)
     {
@@ -45,13 +45,25 @@ class AidRequestController extends Controller
             'document_url' => ['nullable', 'string'],
         ]);
 
+        // إنشاء طلب المساعدة
         $aidRequest = $user->aidRequests()->create($validatedData);
+
+        // إنشاء إشعار لكل Admin
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            Notification::create([
+                'user_id' => $admin->id,
+                'message' => "تم إنشاء طلب مساعدة جديد بواسطة {$user->name} (#{$aidRequest->id})",
+                'type' => 'new_aid_request',
+                'status' => 'unread',
+            ]);
+        }
 
         return response()->json($aidRequest, 201);
     }
 
     /**
-     * Display the specified aid request.
+     * عرض طلب مساعدة محدد
      */
     public function show(AidRequest $aidRequest)
     {

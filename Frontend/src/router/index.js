@@ -5,6 +5,7 @@ import DashboardLayout from '../components/common/DashboardLayout.vue';
 // الصفحات العامة
 const LandingPage = () => import('../views/public/LandingPage.vue');
 const LoginPage = () => import('../views/auth/Login.vue');
+const RegisterPage = () => import('../views/auth/Register.vue'); // ✅ صفحة التسجيل
 
 // لوحة المسؤول
 const AdminDashboard = () => import('../views/admin/AdminDashboard.vue');
@@ -25,8 +26,10 @@ const BeneficiaryAidRequests = () => import('../views/beneficiary/AidRequests.vu
 const NotFound = () => import('../views/public/NotFound.vue');
 
 const routes = [
+  // صفحات عامة
   { path: '/', name: 'home', component: LandingPage, meta: { requiresAuth: false } },
   { path: '/login', name: 'login', component: LoginPage, meta: { requiresAuth: false } },
+  { path: '/register', name: 'register', component: RegisterPage, meta: { requiresAuth: false } }, // ✅
 
   // لوحة المسؤول
   {
