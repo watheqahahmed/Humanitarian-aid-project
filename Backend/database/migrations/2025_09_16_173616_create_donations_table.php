@@ -11,6 +11,8 @@ return new class extends Migration
         Schema::create('donations', function (Blueprint $table) {
             $table->id();
             $table->string('donor_name')->nullable();
+            $table->string('email')->nullable();       // إضافة البريد الإلكتروني
+            $table->string('phone')->nullable();       // إضافة رقم الهاتف
             $table->string('type');
             $table->integer('quantity');
             $table->enum('status', ['pending', 'received', 'distributed'])->default('pending');

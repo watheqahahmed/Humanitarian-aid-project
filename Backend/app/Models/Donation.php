@@ -11,6 +11,8 @@ class Donation extends Model
 
     protected $fillable = [
         'donor_name',
+        'email',        // تم إضافة البريد الإلكتروني
+        'phone',        // تم إضافة رقم الهاتف
         'type',
         'quantity',
         'status',

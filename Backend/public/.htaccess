@@ -23,3 +23,11 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# =========================
+# السماح بالوصول إلى ملفات storage
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.(pdf|jpg|jpeg|png|gif|doc|docx)$">
+        Require all granted
+    </FilesMatch>
+</IfModule>

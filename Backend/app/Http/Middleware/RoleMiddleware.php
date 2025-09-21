@@ -15,8 +15,16 @@ class RoleMiddleware
      */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        if (!in_array($request->user()->role, $roles)) {
-            return response()->json(['message' => 'Unauthorized. You do not have the required role.'], 403);
+        $user = $request->user();
+
+        // التأكد أن المستخدم مسجل الدخول
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized. You must be logged in.'], 401);
+        }
+
+        // التأكد من الدور
+        if (!in_array($user->role, $roles)) {
+            return response()->json(['message' => 'Forbidden. You do not have the required role.'], 403);
         }
 
         return $next($request);
