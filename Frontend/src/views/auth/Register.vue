@@ -1,4 +1,4 @@
-<!-- src/views/Register.vue -->
+<!-- src/views/auth/Register.vue -->
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
     <div class="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-2xl p-8">
@@ -17,6 +17,7 @@
             type="text"
             placeholder="Enter your full name"
             class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            required
           />
         </div>
 
@@ -30,6 +31,7 @@
             type="email"
             placeholder="Enter your email"
             class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            required
           />
         </div>
 
@@ -43,6 +45,7 @@
             type="password"
             placeholder="Enter your password"
             class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            required
           />
         </div>
 
@@ -56,6 +59,7 @@
             type="password"
             placeholder="Confirm your password"
             class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            required
           />
         </div>
 
@@ -68,7 +72,7 @@
             v-model="form.role"
             class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           >
-            <option value="donor">Donor</option>
+            <option value="admin">Admin</option>
             <option value="beneficiary">Beneficiary</option>
             <option value="volunteer">Volunteer</option>
           </select>
@@ -95,18 +99,36 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref } from 'vue';
+import axios from 'axios';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 const form = ref({
-  name: "",
-  email: "",
-  password: "",
-  password_confirmation: "",
-  role: "donor",
+  name: '',
+  email: '',
+  password: '',
+  password_confirmation: '',
+  role: 'admin',
 });
 
-const handleRegister = () => {
-  console.log("Register form submitted:", form.value);
-  // لاحقاً هنا نربط بالـ API (Laravel) عبر axios
+const handleRegister = async () => {
+  try {
+    const response = await axios.post('http://127.0.0.1:8000/api/register', form.value);
+    console.log('Registration successful:', response.data);
+
+    // حفظ التوكن مؤقتًا في localStorage
+    localStorage.setItem('authToken', response.data.token);
+
+    // إعادة التوجيه حسب الدور
+    const role = response.data.user.role;
+    if (role === 'admin') router.push('/admin/dashboard');
+    else if (role === 'volunteer') router.push('/volunteer/dashboard');
+    else router.push('/beneficiary/dashboard');
+  } catch (error) {
+    console.error('Registration failed:', error.response?.data || error.message);
+    alert(error.response?.data?.message || 'Registration failed');
+  }
 };
 </script>
