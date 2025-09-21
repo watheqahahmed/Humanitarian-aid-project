@@ -28,6 +28,10 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        $this->registerPolicies();
+
+        // هنا يمكن إضافة أي Gate مخصصة إذا احتجت لاحقًا
+        // مثال:
+        // Gate::define('update-donation', [DonationPolicy::class, 'update']);
     }
 }

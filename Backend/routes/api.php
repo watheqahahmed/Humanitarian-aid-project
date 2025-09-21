@@ -12,67 +12,72 @@ use App\Http\Controllers\Admin\DistributionController as AdminDistributionContro
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Beneficiary\BeneficiaryController;
+use App\Http\Controllers\Admin\UserController;
 
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+| هنا تعريف جميع مسارات الـ API لمشروعك
+*/
 
-Route::post('/login', [AuthController::class, 'login']);
+// مسارات التسجيل وتسجيل الدخول
+Route::post('/register', [AuthController::class, 'register'])->name('api.register');
+Route::post('/login', [AuthController::class, 'login'])->name('api.login');
+
+// مسار التبرع العام بدون تسجيل دخول
+Route::post('/donations', [DonationController::class, 'storePublic']);
 
 // مسارات محمية
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // تسجيل الخروج
+    Route::post('/logout', [AuthController::class, 'logout'])->name('api.logout');
+
+    // بيانات المستخدم
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
-    // مسارات خاصة بالمسؤول (Admin)
+    // مسارات المسؤول (Admin)
     Route::middleware('role:admin')->prefix('admin')->group(function () {
         Route::apiResource('donations', DonationController::class);
         Route::apiResource('aid-requests', AdminAidRequestController::class)->except(['store']);
+        Route::apiResource('distributions', AdminDistributionController::class);
+
+        Route::get('/dashboard', [DashboardController::class, 'index']);
+
+        // تصدير البيانات
+        Route::get('/reports/donations', [ReportController::class, 'exportDonations']);
+        Route::get('/reports/aid-requests', [ReportController::class, 'exportAidRequests']);
+
+        Route::get('/beneficiaries', [BeneficiaryController::class, 'index']);
+        Route::get('/volunteers', [UserController::class, 'volunteers']);
+
+        // إدارة المستخدمين
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
+        Route::get('/users/{user}', [UserController::class, 'show']);
+        Route::put('/users/{user}', [UserController::class, 'update']);
+        Route::delete('/users/{user}', [UserController::class, 'destroy']);
     });
 
-    // مسارات خاصة بالمستفيد (Beneficiary)
+    // مسارات المستفيد (Beneficiary)
     Route::middleware('role:beneficiary')->prefix('beneficiary')->group(function () {
-        Route::apiResource('aid-requests', BeneficiaryAidRequestController::class)->only(['index', 'store', 'show']);
+        Route::apiResource('aid-requests', BeneficiaryAidRequestController::class)
+            ->only(['index', 'store', 'show']);
+        Route::get('/aid-requests/{aidRequest}/distribution', [BeneficiaryController::class, 'showDistributionDetails']);
     });
 
-    // مسارات خاصة بالمتطوع (Volunteer)
+    // مسارات المتطوع (Volunteer)
     Route::middleware('role:volunteer')->prefix('volunteer')->group(function () {
         Route::get('/deliveries', [DeliveryController::class, 'index']);
-        Route::post('/deliveries/{distribution}', [DeliveryController::class, 'update']);
+        Route::put('/deliveries/{distribution}', [DeliveryController::class, 'update']);
     });
-});
 
-
-
-Route::prefix('notifications')->group(function () {
-    Route::get('/', [NotificationController::class, 'index']);
-    Route::post('/{notification}/mark-as-read', [NotificationController::class, 'markAsRead']);
-});
-
-Route::middleware('role:admin')->prefix('admin')->group(function () {
-    // ...
-    Route::apiResource('distributions', AdminDistributionController::class);
-});
-
-Route::middleware('role:admin')->prefix('admin')->group(function () {
-    // ...
-    Route::get('/dashboard', [DashboardController::class, 'index']);
-});
-
-
-Route::middleware('role:admin')->prefix('admin')->group(function () {
-    // ...
-    Route::get('/reports/donations', [ReportController::class, 'exportDonations']);
-});
-
-Route::middleware('role:admin')->prefix('admin')->group(function () {
-    // ...
-    Route::get('/reports/donations', [ReportController::class, 'exportDonations']);
-    Route::get('/reports/aid-requests', [ReportController::class, 'exportAidRequests']);
-});
-
-
-// مسارات خاصة بالمستفيد (Beneficiary)
-Route::middleware('role:beneficiary')->prefix('beneficiary')->group(function () {
-    // ...
-    Route::get('/aid-requests/{aidRequest}/distribution', [BeneficiaryController::class, 'showDistributionDetails']);
+    // مسارات الإشعارات (محمي)
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::post('/{notification}/mark-as-read', [NotificationController::class, 'markAsRead']);
+    });
 });
