@@ -1,4 +1,35 @@
 @import './base.css';
 @import "tailwindcss";
 
+:root {
+  /* ألوان الوضع الفاتح الافتراضي */
+  --background-color: #ffffff;
+  --text-color: #333333;
+  --header-bg: #f8f9fa;
+  --card-bg: #e9ecef;
+}
+
+body.dark-mode {
+  /* ألوان الوضع الداكن */
+  --background-color: #121212;
+  --text-color: #e0e0e0;
+  --header-bg: #1f1f1f;
+  --card-bg: #2d2d2d;
+}
+
+/* استخدام المتغيرات في التطبيق */
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.header {
+  background-color: var(--header-bg);
+}
+
+.card {
+  background-color: var(--card-bg);
+}
+
 
