@@ -16,6 +16,18 @@ class DistributionController extends Controller
     public function index()
     {
         $distributions = Distribution::with(['volunteer', 'beneficiary', 'donation'])->get();
+
+        // أضف رابط الملف ليكون صالحاً للعرض
+        $distributions->transform(function ($distribution) {
+            if ($distribution->proof_file) {
+                // رابط كامل للملف من public/storage
+                $distribution->proof_file_url = asset('storage/' . $distribution->proof_file);
+            } else {
+                $distribution->proof_file_url = null;
+            }
+            return $distribution;
+        });
+
         return response()->json($distributions);
     }
 
@@ -24,7 +36,7 @@ class DistributionController extends Controller
      */
     public function store(Request $request)
     {
-        $this->authorize('create', Distribution::class); // Authorization
+        $this->authorize('create', Distribution::class);
 
         $validatedData = $request->validate([
             'volunteer_id' => ['required', 'exists:users,id', Rule::exists('users', 'id')->where('role', 'volunteer')],
@@ -35,7 +47,6 @@ class DistributionController extends Controller
 
         $distribution = Distribution::create($validatedData);
 
-        // إنشاء إشعار للمتطوع عند تعيين مهمة توزيع جديدة
         Notification::create([
             'user_id' => $distribution->volunteer_id,
             'message' => 'تم تعيين مهمة توزيع جديدة لك.',
@@ -51,8 +62,15 @@ class DistributionController extends Controller
      */
     public function show(Distribution $distribution)
     {
-        $this->authorize('view', $distribution); // Authorization
+        $this->authorize('view', $distribution);
         $distribution->load(['volunteer', 'beneficiary', 'donation']);
+
+        if ($distribution->proof_file) {
+            $distribution->proof_file_url = asset('storage/' . $distribution->proof_file);
+        } else {
+            $distribution->proof_file_url = null;
+        }
+
         return response()->json($distribution);
     }
 
@@ -61,7 +79,7 @@ class DistributionController extends Controller
      */
     public function update(Request $request, Distribution $distribution)
     {
-        $this->authorize('update', $distribution); // Authorization
+        $this->authorize('update', $distribution);
 
         $validatedData = $request->validate([
             'delivery_status' => 'required|in:assigned,in_progress,completed',
@@ -77,7 +95,7 @@ class DistributionController extends Controller
      */
     public function destroy(Distribution $distribution)
     {
-        $this->authorize('delete', $distribution); // Authorization
+        $this->authorize('delete', $distribution);
         $distribution->delete();
         return response()->json(null, 204);
     }
