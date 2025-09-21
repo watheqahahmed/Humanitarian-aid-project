@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 class DonationController extends Controller
 {
     /**
-     * Display a listing of the donations.
+     * Display a listing of the donations (Admin only).
      */
     public function index()
     {
@@ -19,7 +19,7 @@ class DonationController extends Controller
     }
 
     /**
-     * Store a newly created donation in storage.
+     * Store a newly created donation (Admin only).
      */
     public function store(Request $request)
     {
@@ -38,7 +38,7 @@ class DonationController extends Controller
     }
 
     /**
-     * Display the specified donation.
+     * Display the specified donation (Admin only).
      */
     public function show(Donation $donation)
     {
@@ -47,7 +47,7 @@ class DonationController extends Controller
     }
 
     /**
-     * Update the specified donation in storage.
+     * Update the specified donation (Admin only).
      */
     public function update(Request $request, Donation $donation)
     {
@@ -66,7 +66,7 @@ class DonationController extends Controller
     }
 
     /**
-     * Remove the specified donation from storage.
+     * Remove the specified donation (Admin only).
      */
     public function destroy(Donation $donation)
     {
@@ -75,5 +75,29 @@ class DonationController extends Controller
         $donation->delete();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Store a new donation from any visitor (Public access).
+     */
+    public function storePublic(Request $request)
+    {
+        $validatedData = $request->validate([
+            'donor_name' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'type' => 'required|string|max:255',
+            'quantity' => 'required|integer|min:1',
+        ]);
+
+        // الحالة الافتراضية للتبرع القادم من زائر عام
+        $validatedData['status'] = 'pending';
+
+        $donation = Donation::create($validatedData);
+
+        return response()->json([
+            'message' => 'تم استلام التبرع بنجاح',
+            'donation' => $donation,
+        ], 201);
     }
 }

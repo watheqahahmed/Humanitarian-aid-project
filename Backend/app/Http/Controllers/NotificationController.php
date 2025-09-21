@@ -2,31 +2,40 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Notification;
 
 class NotificationController extends Controller
 {
-    /**
-     * Display a listing of notifications for the authenticated user.
-     */
+    // جلب إشعارات المستخدم
     public function index()
     {
-        $notifications = Auth::user()->notifications()->latest()->get();
-        return response()->json($notifications);
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+
+        try {
+            // استخدم العلاقة الجديدة
+            $notifications = $user->notifications()->latest()->get();
+            return response()->json($notifications);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
-    /**
-     * Mark a specific notification as read.
-     */
-    public function markAsRead(Notification $notification)
+    // وضع علامة "مقروء"
+    public function markAsRead($id)
     {
+        $notification = Notification::findOrFail($id);
+
         if ($notification->user_id !== Auth::id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $notification->update(['status' => 'read']);
+        $notification->status = 'read';
+        $notification->save();
 
         return response()->json($notification);
     }
