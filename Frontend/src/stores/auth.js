@@ -1,3 +1,4 @@
+// src/stores/auth.js
 import { defineStore } from 'pinia';
 
 export const useAuthStore = defineStore('auth', {
@@ -5,6 +6,9 @@ export const useAuthStore = defineStore('auth', {
     token: null,
     user: null,
   }),
+  getters: {
+    isAuthenticated: (state) => !!state.token,
+  },
   actions: {
     setToken(token) {
       this.token = token;
@@ -16,8 +20,12 @@ export const useAuthStore = defineStore('auth', {
       this.token = null;
       this.user = null;
     },
-  },
-  getters: {
-    isAuthenticated: (state) => !!state.token,
+    logout() {
+      // مسح بيانات المستخدم
+      this.clearAuth();
+
+      // إعادة التوجيه للصفحة الرئيسية الخارجية
+      window.location.href = 'http://localhost:5173/';
+    },
   },
 });

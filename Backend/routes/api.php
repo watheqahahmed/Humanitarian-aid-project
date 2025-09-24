@@ -18,7 +18,6 @@ use App\Http\Controllers\Admin\UserController;
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-| هنا تعريف جميع مسارات الـ API لمشروعك
 */
 
 // مسارات التسجيل وتسجيل الدخول
@@ -41,16 +40,22 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // مسارات المسؤول (Admin)
     Route::middleware('role:admin')->prefix('admin')->group(function () {
+        // إدارة التبرعات
         Route::apiResource('donations', DonationController::class);
+        Route::put('donations/{donation}/status', [DonationController::class, 'updateStatus']); // مسار تحديث الحالة
+
+        // إدارة طلبات المساعدة
         Route::apiResource('aid-requests', AdminAidRequestController::class)->except(['store']);
         Route::apiResource('distributions', AdminDistributionController::class);
 
+        // لوحة التحكم
         Route::get('/dashboard', [DashboardController::class, 'index']);
 
         // تصدير البيانات
         Route::get('/reports/donations', [ReportController::class, 'exportDonations']);
         Route::get('/reports/aid-requests', [ReportController::class, 'exportAidRequests']);
 
+        // إدارة المستفيدين والمتطوعين
         Route::get('/beneficiaries', [BeneficiaryController::class, 'index']);
         Route::get('/volunteers', [UserController::class, 'volunteers']);
 
@@ -80,4 +85,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [NotificationController::class, 'index']);
         Route::post('/{notification}/mark-as-read', [NotificationController::class, 'markAsRead']);
     });
+
+    // تغيير كلمة المرور
+    Route::post('/user/change-password', [UserController::class, 'changePassword']);
 });

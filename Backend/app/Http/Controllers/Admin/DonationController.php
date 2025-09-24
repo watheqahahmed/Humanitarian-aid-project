@@ -38,24 +38,7 @@ class DonationController extends Controller
 
         $donation = Donation::create($validatedData);
 
-        // إشعار لجميع الـ Admins عند إضافة تبرع جديد
-        $admins = User::where('role', 'admin')->get();
-        foreach ($admins as $admin) {
-            Notification::create([
-                'user_id' => $admin->id,
-                'message' => "تم إضافة تبرع جديد: {$donation->type}, الكمية: {$donation->quantity}",
-                'type' => 'donation_update',
-                'status' => 'unread',
-            ]);
-
-            try {
-                Mail::to($admin->email)->send(new NewNotificationMail(
-                    "تم إضافة تبرع جديد: {$donation->type}, الكمية: {$donation->quantity}"
-                ));
-            } catch (\Exception $e) {
-                \Log::error("Mail error for admin {$admin->email}: {$e->getMessage()}");
-            }
-        }
+        $this->notifyAdmins("تم إضافة تبرع جديد: {$donation->type}, الكمية: {$donation->quantity}", 'donation_update');
 
         return response()->json($donation, 201);
     }
@@ -70,7 +53,7 @@ class DonationController extends Controller
     }
 
     /**
-     * Update the specified donation (Admin only).
+     * Update the specified donation (Admin only) — full update.
      */
     public function update(Request $request, Donation $donation)
     {
@@ -85,26 +68,31 @@ class DonationController extends Controller
 
         $donation->update($validatedData);
 
-        // إشعار جميع الـ Admins عند تحديث التبرع
-        $admins = User::where('role', 'admin')->get();
-        foreach ($admins as $admin) {
-            Notification::create([
-                'user_id' => $admin->id,
-                'message' => "تم تحديث التبرع رقم {$donation->id}: الحالة الآن {$donation->status}",
-                'type' => 'donation_update',
-                'status' => 'unread',
-            ]);
-
-            try {
-                Mail::to($admin->email)->send(new NewNotificationMail(
-                    "تم تحديث التبرع رقم {$donation->id}: الحالة الآن {$donation->status}"
-                ));
-            } catch (\Exception $e) {
-                \Log::error("Mail error for admin {$admin->email}: {$e->getMessage()}");
-            }
-        }
+        $this->notifyAdmins("تم تحديث التبرع رقم {$donation->id}: الحالة الآن {$donation->status}", 'donation_update');
 
         return response()->json($donation);
+    }
+
+    /**
+     * Update only the status of a donation (Admin only).
+     */
+    public function updateStatus(Request $request, Donation $donation)
+    {
+        $this->authorize('update', $donation);
+
+        $validatedData = $request->validate([
+            'status' => 'required|in:pending,approved,denied,distributed,received',
+        ]);
+
+        $donation->status = $validatedData['status'];
+        $donation->save();
+
+        $this->notifyAdmins("تم تحديث التبرع رقم {$donation->id}: الحالة الآن {$donation->status}", 'donation_update');
+
+        return response()->json([
+            'message' => 'تم تحديث الحالة بنجاح',
+            'donation' => $donation,
+        ]);
     }
 
     /**
@@ -115,24 +103,7 @@ class DonationController extends Controller
         $this->authorize('delete', $donation);
         $donation->delete();
 
-        // إشعار جميع الـ Admins عند حذف التبرع
-        $admins = User::where('role', 'admin')->get();
-        foreach ($admins as $admin) {
-            Notification::create([
-                'user_id' => $admin->id,
-                'message' => "تم حذف التبرع رقم {$donation->id}",
-                'type' => 'donation_delete',
-                'status' => 'unread',
-            ]);
-
-            try {
-                Mail::to($admin->email)->send(new NewNotificationMail(
-                    "تم حذف التبرع رقم {$donation->id}"
-                ));
-            } catch (\Exception $e) {
-                \Log::error("Mail error for admin {$admin->email}: {$e->getMessage()}");
-            }
-        }
+        $this->notifyAdmins("تم حذف التبرع رقم {$donation->id}", 'donation_delete');
 
         return response()->json(null, 204);
     }
@@ -154,28 +125,33 @@ class DonationController extends Controller
 
         $donation = Donation::create($validatedData);
 
-        // إشعار جميع الـ Admins عند استقبال تبرع عام
-        $admins = User::where('role', 'admin')->get();
-        foreach ($admins as $admin) {
-            Notification::create([
-                'user_id' => $admin->id,
-                'message' => "تم استلام تبرع جديد من زائر: {$donation->type}, الكمية: {$donation->quantity}",
-                'type' => 'donation_public',
-                'status' => 'unread',
-            ]);
-
-            try {
-                Mail::to($admin->email)->send(new NewNotificationMail(
-                    "تم استلام تبرع جديد من زائر: {$donation->type}, الكمية: {$donation->quantity}"
-                ));
-            } catch (\Exception $e) {
-                \Log::error("Mail error for admin {$admin->email}: {$e->getMessage()}");
-            }
-        }
+        $this->notifyAdmins("تم استلام تبرع جديد من زائر: {$donation->type}, الكمية: {$donation->quantity}", 'donation_public');
 
         return response()->json([
             'message' => 'تم استلام التبرع بنجاح',
             'donation' => $donation,
         ], 201);
+    }
+
+    /**
+     * Helper: Notify all admins with message and type
+     */
+    private function notifyAdmins(string $message, string $type)
+    {
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            Notification::create([
+                'user_id' => $admin->id,
+                'message' => $message,
+                'type' => $type,
+                'status' => 'unread',
+            ]);
+
+            try {
+                Mail::to($admin->email)->send(new NewNotificationMail($message));
+            } catch (\Exception $e) {
+                \Log::error("Mail error for admin {$admin->email}: {$e->getMessage()}");
+            }
+        }
     }
 }

@@ -38,27 +38,25 @@ class NotificationController extends Controller
      */
     public function createNotification($message, $roles = null, $type = 'success')
     {
-        // جلب المستخدمين حسب الدور، أو جميعهم إذا لم يحدد دور
-        $users = $roles ? User::whereIn('role', (array)$roles)->get() : User::all();
+        $query = $roles ? User::whereIn('role', (array)$roles) : User::query();
 
-        foreach ($users as $user) {
-            // إنشاء الإشعار في قاعدة البيانات
-            $notification = Notification::create([
-                'user_id' => $user->id,
-                'message' => $message,
-                'type' => $type,
-                'status' => 'unread',
-            ]);
+        // نستخدم chunk لتقليل استهلاك الذاكرة
+        $query->chunk(50, function($users) use ($message, $type) {
+            foreach ($users as $user) {
+                // إنشاء الإشعار في قاعدة البيانات
+                $notification = Notification::create([
+                    'user_id' => $user->id,
+                    'message' => $message,
+                    'type' => $type,
+                    'status' => 'unread',
+                ]);
 
-            // إرسال البريد لكل مستخدم مع حماية من الأخطاء
-            try {
-                Mail::to($user->email)->send(new NewNotificationMail($notification->message));
-            } catch (\Exception $e) {
-                \Log::error('Mail error for user '.$user->email.': '.$e->getMessage());
+                // إرسال البريد في الخلفية باستخدام queue
+                Mail::to($user->email)->queue(new NewNotificationMail($notification->message));
             }
-        }
+        });
 
-        return response()->json(['message' => 'Notification sent successfully.']);
+        return response()->json(['message' => 'Notification queued successfully.']);
     }
 
     /**
@@ -67,7 +65,6 @@ class NotificationController extends Controller
     public function notifyAdminAboutVolunteerProof($volunteer)
     {
         $message = "قام المتطوع {$volunteer->name} برفع إثبات جديد.";
-        // فقط للإدمن
         return $this->createNotification($message, ['admin'], 'info');
     }
 
@@ -77,7 +74,6 @@ class NotificationController extends Controller
     public function notifyVolunteersAboutRequest($beneficiary)
     {
         $message = "المستفيد {$beneficiary->name} قدم طلب مساعدة جديد.";
-        // فقط للمتطوعين
         return $this->createNotification($message, ['volunteer'], 'info');
     }
 }

@@ -1,14 +1,18 @@
 <template>
-  <footer class="bg-gray-800 text-white p-6 text-center">
-    <div class="container mx-auto">
-      <p>&copy; 2024 Charity App. All rights reserved.</p>
-    </div>
+  <footer class="text-center">
+    &copy; 2024 Charity App. All rights reserved.
   </footer>
 </template>
 
 <script setup>
-// No script logic is needed for this simple footer
+// لا حاجة لأي كود
 </script>
 
 <style scoped>
+footer {
+  color: #111827; /* نص أسود داكن واضح */
+  background-color: transparent; /* شفافة تمامًا */
+  font-size: 0.9rem;
+  padding: 1rem 0; /* مساحة داخلية حول النص */
+}
 </style>

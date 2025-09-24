@@ -1,9 +1,9 @@
 <template>
   <div class="min-h-screen p-8 bg-gray-100">
-    <h1 class="text-3xl font-bold mb-6 text-gray-800">مهام التوزيع المخصصة</h1>
+    <h1 class="text-3xl font-bold mb-8 text-gray-800 text-center">مهام التوزيع المخصصة</h1>
 
     <!-- جدول المهام -->
-    <div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+    <div class="bg-white p-6 rounded-2xl shadow-md overflow-x-auto mb-8">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
@@ -14,7 +14,7 @@
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-for="delivery in deliveries" :key="delivery.id">
+          <tr v-for="delivery in deliveries" :key="delivery.id" class="hover:bg-gray-50 transition">
             <td class="px-6 py-4 whitespace-nowrap">{{ delivery.beneficiary?.name || 'غير محدد' }}</td>
             <td class="px-6 py-4 whitespace-nowrap">{{ delivery.donation?.type || 'نوع المساعدة غير محدد' }}</td>
             <td class="px-6 py-4 whitespace-nowrap">
@@ -22,37 +22,31 @@
                 {{ delivery.delivery_status }}
               </span>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium flex items-center gap-2">
               <!-- زر رفع الإثبات لكل مهمة غير مكتملة -->
               <button
                 v-if="delivery.delivery_status !== 'completed'"
                 @click="selectDelivery(delivery.id)"
-                class="text-green-600 hover:text-green-900 ml-2"
+                class="text-green-600 hover:text-green-900 transition"
               >
                 رفع إثبات / تأكيد التسليم
               </button>
 
               <!-- رابط الملف إذا موجود -->
-
-             <a
-  v-if="delivery.proof_file"
-  :href="`http://localhost:8000/storage/${delivery.proof_file}`"
-  target="_blank"
-  class="text-blue-500 hover:underline ml-2"
->
-  عرض الملف
-</a>
-
-
-
-
-
+              <a
+                v-if="delivery.proof_file"
+                :href="`http://localhost:8000/storage/${delivery.proof_file}`"
+                target="_blank"
+                class="text-blue-500 hover:underline transition"
+              >
+                عرض الملف
+              </a>
 
               <!-- رسالة إذا لا يوجد إثبات -->
-              <span v-else-if="delivery.delivery_status !== 'completed'" class="ml-2">لا يوجد إثبات</span>
+              <span v-else-if="delivery.delivery_status !== 'completed'" class="text-gray-500">لا يوجد إثبات</span>
 
               <!-- رسالة تم التسليم -->
-              <span v-else class="ml-2 text-green-700 font-semibold">تم التسليم</span>
+              <span v-else class="text-green-700 font-semibold">تم التسليم</span>
             </td>
           </tr>
         </tbody>
@@ -60,23 +54,23 @@
     </div>
 
     <!-- نموذج رفع الإثبات -->
-    <div v-if="selectedDeliveryId" class="mt-8 bg-white p-6 rounded-lg shadow-md">
-      <h2 class="text-xl font-bold mb-4">رفع إثبات التسليم</h2>
-      <form @submit.prevent="uploadProof">
-        <div class="mb-4">
-          <label for="proof_file" class="block text-gray-700 text-sm font-bold mb-2">اختر ملف</label>
+    <div v-if="selectedDeliveryId" class="mt-8 bg-white p-6 rounded-2xl shadow-md max-w-lg mx-auto">
+      <h2 class="text-xl font-bold mb-4 text-gray-700">رفع إثبات التسليم</h2>
+      <form @submit.prevent="uploadProof" class="space-y-4">
+        <div>
+          <label for="proof_file" class="block text-gray-700 text-sm font-semibold mb-2">اختر ملف</label>
           <input
             type="file"
             @change="onFileChange"
             id="proof_file"
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            class="w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
             required
           >
         </div>
         <button
           type="submit"
           :disabled="loading"
-          class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
         >
           {{ loading ? 'جاري الرفع...' : 'رفع' }}
         </button>
@@ -110,7 +104,6 @@ const fetchDeliveries = async () => {
 
 const onFileChange = (e) => {
   proofFile.value = e.target.files[0];
-  console.log('Selected file:', proofFile.value);
 };
 
 const selectDelivery = (deliveryId) => {
@@ -126,7 +119,7 @@ const uploadProof = async () => {
   const formData = new FormData();
   formData.append('proof_file', proofFile.value);
   formData.append('delivery_status', 'completed');
-  formData.append('_method', 'PUT'); // <- إضافة هذا السطر لتجنب خطأ 422
+  formData.append('_method', 'PUT');
 
   loading.value = true;
   try {
@@ -162,3 +155,10 @@ onMounted(() => {
   fetchDeliveries();
 });
 </script>
+
+<style scoped>
+/* تحسين عرض الملف */
+a {
+  white-space: nowrap;
+}
+</style>
