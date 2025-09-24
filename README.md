@@ -150,24 +150,22 @@ This project is open-source under the **MIT License**.
 
 ## Screenshots
 
-  ## Screenshots
 
-![Screenshot 1](1.PNG)
-![Screenshot 2](2.PNG)
-![Screenshot 3](3.PNG)
-![Screenshot 4](4.PNG)
-![Screenshot 5](5.PNG)
-![Screenshot 6](6.PNG)
-![Screenshot 7](7.PNG)
-![Screenshot 8](8.PNG)
-![Screenshot 9](9.PNG)
-![Screenshot 10](10.PNG)
-![Screenshot 11](11.PNG)
-![Screenshot 12](12.PNG)
-![Screenshot 13](13.PNG)
-![Screenshot 14](14.PNG)
-![Screenshot 15](15.PNG)
-![Screenshot 16](16.PNG)
+  ![Screenshot 1](Screenshots/1.PNG)
+  ![Screenshot 1](Screenshots/2.PNG)
+  ![Screenshot 1](Screenshots/3.PNG)
+  ![Screenshot 1](Screenshots/4.PNG)
+  ![Screenshot 1](Screenshots/5.PNG)
+  ![Screenshot 1](Screenshots/6.PNG)
+  ![Screenshot 1](Screenshots/7.PNG)
+  ![Screenshot 1](Screenshots/8.PNG)
+  ![Screenshot 1](Screenshots/9.PNG)
+  ![Screenshot 1](Screenshots/10.PNG)
+  ![Screenshot 1](Screenshots/11.PNG)
+  ![Screenshot 1](Screenshots/12.PNG)
+  ![Screenshot 1](Screenshots/13.PNG)
+
+  
 
 
 ```
