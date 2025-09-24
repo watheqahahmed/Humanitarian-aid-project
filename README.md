@@ -12,7 +12,7 @@ The project aims to facilitate the management of aid distribution, user tracking
 
 ### Backend (Laravel / PHP)
 - **Laravel 12**: Main framework for MVC structure and routing.  
-- **PPHP 8.2.12**: Server-side programming language.  
+- **PHP 8.2.12**: Server-side programming language.  
 - **Laravel Sanctum**: Authentication and API token management.  
 - **Maatwebsite Excel**: Exporting and importing Excel/CSV files.  
 - **Pusher PHP Server**: Real-time notifications support.  
