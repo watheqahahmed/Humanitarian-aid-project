@@ -150,19 +150,24 @@ This project is open-source under the **MIT License**.
 
 ## Screenshots
 
-  ![Screenshot 1](public/screenshots/1.PNG?raw=true)
-  ![Screenshot 2](public/screenshots/2.PNG?raw=true)
-  ![Screenshot 3](public/screenshots/3.PNG?raw=true)
-  ![Screenshot 4](public/screenshots/4.PNG?raw=true)
-  ![Screenshot 5](public/screenshots/5.PNG?raw=true)
-  ![Screenshot 6](public/screenshots/6.PNG?raw=true)
-  ![Screenshot 7](public/screenshots/7.PNG?raw=true)
-  ![Screenshot 8](public/screenshots/8.PNG?raw=true)
-  ![Screenshot 9](public/screenshots/9.PNG?raw=true)
-  ![Screenshot 10](public/screenshots/10.PNG?raw=true)
-  ![Screenshot 11](public/screenshots/11.PNG?raw=true)
-  ![Screenshot 12](public/screenshots/12.PNG?raw=true)
-  ![Screenshot 13](public/screenshots/13.PNG?raw=true)
+  ## Screenshots
+
+![Screenshot 1](1.PNG)
+![Screenshot 2](2.PNG)
+![Screenshot 3](3.PNG)
+![Screenshot 4](4.PNG)
+![Screenshot 5](5.PNG)
+![Screenshot 6](6.PNG)
+![Screenshot 7](7.PNG)
+![Screenshot 8](8.PNG)
+![Screenshot 9](9.PNG)
+![Screenshot 10](10.PNG)
+![Screenshot 11](11.PNG)
+![Screenshot 12](12.PNG)
+![Screenshot 13](13.PNG)
+![Screenshot 14](14.PNG)
+![Screenshot 15](15.PNG)
+![Screenshot 16](16.PNG)
 
 
 ```
